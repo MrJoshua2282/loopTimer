@@ -1,0 +1,22 @@
+.BackBtn {
+    height: 2rem;
+    width: 4rem;
+    border-radius: 3rem;
+    text-decoration: none;
+    outline: none;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, 0.7);
+    border: .1rem solid black;
+    background-image: linear-gradient(to left top, rgba(22, 60, 184, 0.9), rgba(40, 155, 69, 0.9));
+    transition: all .3s;
+    font-weight: 600;
+}
+
+.BackBtn:hover {
+    background-image: linear-gradient(to left top, rgba(22, 60, 184, 1), rgba(40, 155, 69, 1));
+    transform: translateY(-.3rem);
+}
+
+.BackBtn:active {
+    box-shadow: 0 .25rem .5rem rgba(0, 0, 0, 0.9);
+    transform: translateY(-2px);
+}
