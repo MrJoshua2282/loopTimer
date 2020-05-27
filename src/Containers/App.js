@@ -5,6 +5,7 @@ import './App.css';
 import './BackBtn.css';
 import './Buttons.css';
 import beepSound from '../assets/audio/beep.wav';
+import { cleanTimeDisplay } from '../shared/functions';
 
 class App extends Component {
   state = {
@@ -15,7 +16,9 @@ class App extends Component {
     isRunning: false,
     loopForever: true,
     numOfLoops: 1,
-    completeLoops: 0
+    completeLoops: 0,
+    startingTime: Date.now(),
+    runningTime: 0
   }
 
   soundPlay = (src) => {
@@ -23,27 +26,6 @@ class App extends Component {
       src
     })
     sound.play();
-  }
-
-  cleanTimeDisplay = (SECONDS) => {
-    //create the hours
-    let updatedHr = Math.floor(SECONDS / 3600);
-    if (updatedHr < 10) { updatedHr = `0${updatedHr}` };
-    if (updatedHr < 1) { updatedHr = `00` };
-
-    //create the minutes
-    let updatedMin = Math.floor((SECONDS - (updatedHr * 3600)) / 60);
-    if (updatedMin < 10) { updatedMin = `0${updatedMin}` };
-    if (updatedMin < 1) { updatedMin = `00` };
-
-    //create the seconds
-    let updatedSec = SECONDS - ((updatedHr * 3600) + (updatedMin * 60));
-    if (updatedSec < 10) { updatedSec = `0${updatedSec}` };
-    if (updatedSec < 1) { updatedSec = `00` };
-
-    let rollingTime = `${updatedHr}:${updatedMin}:${updatedSec}`;
-
-    return rollingTime;
   }
 
   pushNumHandler = (num) => {
@@ -66,17 +48,16 @@ class App extends Component {
     let min = +timer.slice(2, 4);
     let sec = +timer.slice(4, 6);
 
-
     let converted2Sec = (hr * 3600) + (min * 60) + sec;
 
     // if there is no input when set, it becomes 30sec
     if (converted2Sec === 0) {
       converted2Sec = 30;
-      // if the input is greater than the 86400 (24hrs), then it becomes 24hrs
+      // if the input is greater than 86400 (24hrs), then it becomes 24hrs
     } else if (converted2Sec >= 86400) {
       converted2Sec = 86400;
     } else {
-      rollingTime = this.cleanTimeDisplay(converted2Sec);
+      rollingTime = cleanTimeDisplay(converted2Sec);
     }
 
     this.setState({ isSet: true, timer: rollingTime, convertedToSec: converted2Sec, convertedCopy: converted2Sec });
@@ -89,33 +70,33 @@ class App extends Component {
 
   hitBackHandler = () => {
     clearInterval(this.interval);
-    this.setState({ timer: '00:00:00', isSet: false, isRunning: false, completeLoops: 0, numOfLoops: 0 });
+    this.setState({ timer: '00:00:00', isSet: false, isRunning: false, completeLoops: 0, numOfLoops: 0, runningTime: '' });
   }
 
+
   startTimerHandler = () => {
-
-    this.setState({ isRunning: true });
-
-    // let date = new Date();
-    // let currentSecond = date.getSeconds();
+    this.setState({ isRunning: true, runningTime: Date.now() - this.state.startingTime });
 
     this.interval = setInterval(() => {
       this.setState((prevState) => {
         if (prevState.convertedToSec === 1) {
           return {
             completeLoops: prevState.completeLoops + 1,
-            convertedToSec: prevState.convertedToSec - 1
+            convertedToSec: prevState.convertedToSec - 1,
+            runningTime: Date.now() - this.state.startingTime
           };
         }
 
         if (prevState.convertedToSec === 0) {
 
           return {
-            convertedToSec: prevState.convertedCopy - 1
+            convertedToSec: prevState.convertedCopy - 1,
+            runningTime: Date.now() - this.state.startingTime
           };
         } else {
           return {
-            convertedToSec: prevState.convertedToSec - 1
+            convertedToSec: prevState.convertedToSec - 1,
+            runningTime: Date.now() - this.state.startingTime
           };
         }
       });
@@ -124,8 +105,9 @@ class App extends Component {
 
   pauseTimerHandler = () => {
     let currentTimer = this.state.convertedToSec;
+    let runTime = this.state.runningTime;
     clearInterval(this.interval);
-    this.setState({ isRunning: false, convertedToSec: currentTimer });
+    this.setState({ isRunning: false, convertedToSec: currentTimer, runningTime: runTime });
   }
 
   radioBtnHandler = (event) => {
@@ -151,14 +133,24 @@ class App extends Component {
 
     if (this.state.convertedToSec === 0 && this.state.isRunning) {
       this.soundPlay(beepSound);
-
-      // this.setState((prevState) => {
-      //     return {
-      //       completeLoops: prevState.completeLoops + 1         
-      //   }
-      // })
     }
   }
+
+  // cleanMs = (ms) => {
+  //   // let time = '91:51:41:999';
+  //   // let [hr, min, sec, ms] = time.split(':');
+  //   // hr = +hr * 60 * 60 * 1000;
+  //   // min = +min * 60 * 1000;
+  //   // sec = +sec * 1000;
+  //   // ms = +ms;
+  //   // let updatedTime = hr + min + sec + ms;
+  //   let updatedHr = Math.floor(ms / 3600000);
+  //   let updatedMin = Math.floor((ms - (updatedHr * 3600000)) / 60000);
+  //   let updatedSec = Math.floor((ms - (updatedHr * 3600000 + updatedMin * 60000)) / 1000);
+  //   let updatedMs = Math.floor(ms - (updatedHr * 3600000 + updatedMin * 60000 + updatedSec * 1000));
+  //   let cleanTime = `${updatedHr}:${updatedMin}:${updatedSec}:${updatedMs}`
+  //   return cleanTime;
+  // }
 
   render() {
     Howler.volume(8.0);
@@ -169,6 +161,7 @@ class App extends Component {
           <span className='numOfLoops' >{this.state.completeLoops} Loop(s) {this.state.loopForever ? '' : this.state.numOfLoops} </span>
           <div className='bar' style={{ width: (((this.state.convertedCopy - this.state.convertedToSec) / this.state.convertedCopy)) * 200 }} />
         </div>
+        {/* <div style={{ textAlign: 'center' }}>Running time: {this.cleanMs(this.state.runningTime)}</div> */}
       </div>
     );
 
@@ -214,9 +207,10 @@ class App extends Component {
       <div className="App">
         <section className="application">
           <section className="timer-app">
-            <span className='hrMinSec'>{this.state.isSet ? this.cleanTimeDisplay(this.state.convertedToSec) : this.state.timer}</span>
+            <span className='hrMinSec'>{this.state.isSet ? cleanTimeDisplay(this.state.convertedToSec) : this.state.timer}</span>
             <div>
               {progressBar}
+
             </div>
             <div>
               {this.state.isSet ? null : buttons}
